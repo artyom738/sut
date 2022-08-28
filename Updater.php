@@ -47,5 +47,6 @@ create table s_test
 			");
 			$this->setDbVersion(4);
 		}
+		echo 'done';
 	}
 }
