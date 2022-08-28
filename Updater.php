@@ -13,7 +13,7 @@ class Updater
 
 	public function getDbVersion(): int
 	{
-		$result = $this->dbconn->query('select value from s_options where NAME = "database_version"');
+		$result = $this->dbconn->query("select value from s_options where NAME = 'database_version'");
 		return $result->fetch_assoc()['value'];
 	}
 
@@ -42,9 +42,9 @@ create table s_test
 
 		if ($version <= 3)
 		{
-			$db->query('
+			$db->query("
 
-			');
+			");
 			$this->setDbVersion(4);
 		}
 	}
