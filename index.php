@@ -9,4 +9,5 @@ $autoloader->addVendorNamespacePath('Sut\\', SOURCE_DIR);
 $database = Sut\Database::getInstance();
 $updater = new Sut\Updater($database);
 
-$updater->updateDb();
+$version = $updater->updateDb();
+echo $version;
