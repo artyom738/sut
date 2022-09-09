@@ -190,32 +190,31 @@ create table IF NOT EXISTS s_user
 alter table s_object_props
 	add constraint s_object_props_s_object_ID_fk
 		foreign key (OBJECT_ID) references s_object (ID);");
-			$db->query("
 
+			$db->query("
 alter table s_object_props
 	add constraint s_object_props_s_prop_ID_fk
 		foreign key (PROP_ID) references s_prop (ID);");
-			$db->query("
 
+			$db->query("
 alter table s_object
 	add TYPE_ID int null;");
-			$db->query("
 
+			$db->query("
 alter table s_object
 	add constraint s_object_s_object_type_ID_fk
-		foreign key (TYPE_ID) references s_object_type (ID);");
-			$db->query("
+		foreign key (TYPE) references s_object_type (ID);");
 
+			$db->query("
 alter table s_object_service
 	add constraint s_object_service_s_object_ID_fk
 		foreign key (OBJECT_ID) references s_object (ID);");
 			$db->query("
-
 alter table s_object_service
 	add constraint s_object_service_s_service_ID_fk
 		foreign key (SERVICE_ID) references s_service (ID);");
-			$db->query("
 
+			$db->query("
 create table IF NOT EXISTS s_object_owner
 (
 	OBJECT_ID int null,
@@ -233,7 +232,6 @@ create table IF NOT EXISTS s_object_owner
 		if ($version <= 8)
 		{
 			$db->query("
-
 create table s_contract
 (
 	ID         int auto_increment,
@@ -249,8 +247,8 @@ create table s_contract
 	constraint s_contract_s_user_ID_fk
 		foreign key (OWNER_ID) references s_user (ID)
 );");
-			$db->query("
 
+			$db->query("
 create table s_booking
 (
 	ID        int          null,
@@ -272,12 +270,10 @@ alter table s_booking
 		primary key (ID);");
 
 			$db->query("
-
 alter table s_booking
 	modify ID int auto_increment;");
 
 			$db->query("
-
 create table s_object_clicks
 (
 	OBJECT_ID         int  null,
@@ -289,8 +285,6 @@ create table s_object_clicks
 	constraint s_object_clicks_s_object_ID_fk
 		foreign key (OBJECT_ID) references s_object (ID)
 );
-
-
 			");
 			$this->setDbVersion(10);
 		}
