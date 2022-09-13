@@ -98,6 +98,7 @@ where sr.ID = 1 and o.TYPE = 'hotel';
 
 # Task 5 - Составить запрос(ы) для выборки полного набора данных по гостиницам заданного города.
 # В результатах выборки должна быть и минимальная цена системы бронирования и ссылка на неё.
+# Дополнить запрос сортировкой по минимальной цене.
 
 select o.ID, o.NAME, o.CITY_ID,
        h.STARS, h.TYPE,
@@ -117,7 +118,40 @@ from s_object o
 ) price on price.hotel_id = bh.HOTEL_ID and price.min_price = sbd.PRICE
 
 where o.TYPE = 'hotel' and o.CITY_ID = 8 and min_price is not null
-group by o.ID, o.NAME, o.CITY_ID, h.STARS, h.TYPE, bh.ID, sb.NAME, price.min_price, sbd.LINK;
+group by o.ID, o.NAME, o.CITY_ID, h.STARS, h.TYPE, bh.ID, sb.NAME, price.min_price, sbd.LINK
+order by price.min_price;
+
+
+# Task 5b. Какие есть несколько различных подходов для решения данной задачи?
+# Можно ли тут использовать хранимую процедуру? Если да, то реализуй это решение.
+# Опиши в чем плюсы и минусы использования хранимых процедур.
+
+DROP FUNCTION IF EXISTS GET_MIN_SUM;
+CREATE FUNCTION GET_MIN_SUM(HOTEL_ID INT) RETURNS INT
+BEGIN
+	DECLARE SUM INT DEFAULT 0;
+	SELECT MIN(SBD.PRICE) MIN_PRICE
+	FROM s_booking_hotels BH
+		     LEFT JOIN s_booking_data sbd on BH.BOOKING_CODE = sbd.BOOKING_CODE
+	WHERE BH.HOTEL_ID = HOTEL_ID
+	INTO SUM;
+	RETURN SUM;
+end;
+
+select o.ID, o.NAME, o.CITY_ID,
+       h.STARS, h.TYPE,
+       bh.ID, sb.NAME,
+       sbd.PRICE, sbd.LINK
+from s_object o
+	     left join s_props_hotel h on o.ID = h.OBJECT_ID
+	     left join s_booking_hotels bh on o.ID = bh.HOTEL_ID
+	     left join s_booking sb on sb.ID = bh.BOOKING_SYSTEM_ID
+	     left join s_booking_data sbd on bh.BOOKING_CODE = sbd.BOOKING_CODE
+
+where o.TYPE = 'hotel' and o.CITY_ID = 8 and sbd.PRICE = GET_MIN_SUM(o.ID)
+
+group by o.ID, o.NAME, o.CITY_ID, h.STARS, h.TYPE, bh.ID, sb.NAME, sbd.PRICE, sbd.LINK
+order by sbd.PRICE;
 
 
 # Task 6. Составить запрос(ы) для создания объекта с полным набором информации владельцем объекта.
