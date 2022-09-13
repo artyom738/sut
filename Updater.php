@@ -286,10 +286,19 @@ create table s_object_clicks
 		foreign key (OBJECT_ID) references s_object (ID)
 );
 			");
+
+			$commands = file_get_contents("sql/data.sql");
+			$db->multi_query($commands);
 			$this->setDbVersion(10);
 		}
 
+		if ($version <= 10)
+		{
+			$commands = file_get_contents("sql/data.sql");
+			$this->setDbVersion(11);
+		}
 
-		return $version;
+
+		return $this->getDbVersion();
 	}
 }
