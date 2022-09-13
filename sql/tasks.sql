@@ -103,22 +103,20 @@ where sr.ID = 1 and o.TYPE = 'hotel';
 select o.ID, o.NAME, o.CITY_ID,
        h.STARS, h.TYPE,
        bh.ID, sb.NAME,
-       price.min_price, sbd.LINK
+       price.min_price, bh.LINK
 from s_object o
 	     left join s_props_hotel h on o.ID = h.OBJECT_ID
 	     left join s_booking_hotels bh on o.ID = bh.HOTEL_ID
 	     left join s_booking sb on sb.ID = bh.BOOKING_SYSTEM_ID
-	     left join s_booking_data sbd on bh.BOOKING_CODE = sbd.BOOKING_CODE
 	     left join (
-
-	select bh.HOTEL_ID hotel_id, MIN(bd.PRICE) min_price from s_booking_hotels bh
-		left join s_booking_data bd on bd.BOOKING_CODE = bh.BOOKING_CODE
+	select bh.HOTEL_ID hotel_id, MIN(bh.PRICE) min_price from s_booking_hotels bh
 	group by bh.HOTEL_ID
 
-) price on price.hotel_id = bh.HOTEL_ID and price.min_price = sbd.PRICE
+) price on price.hotel_id = bh.HOTEL_ID AND price.min_price = BH.PRICE
 
 where o.TYPE = 'hotel' and o.CITY_ID = 8 and min_price is not null
-group by o.ID, o.NAME, o.CITY_ID, h.STARS, h.TYPE, bh.ID, sb.NAME, price.min_price, sbd.LINK
+
+group by o.ID, o.NAME, o.CITY_ID, h.STARS, h.TYPE, bh.ID, sb.NAME, price.min_price, bh.LINK
 order by price.min_price;
 
 
@@ -130,9 +128,8 @@ DROP FUNCTION IF EXISTS GET_MIN_SUM;
 CREATE FUNCTION GET_MIN_SUM(HOTEL_ID INT) RETURNS INT
 BEGIN
 	DECLARE SUM INT DEFAULT 0;
-	SELECT MIN(SBD.PRICE) MIN_PRICE
+	SELECT MIN(BH.PRICE) MIN_PRICE
 	FROM s_booking_hotels BH
-		     LEFT JOIN s_booking_data sbd on BH.BOOKING_CODE = sbd.BOOKING_CODE
 	WHERE BH.HOTEL_ID = HOTEL_ID
 	INTO SUM;
 	RETURN SUM;
@@ -141,17 +138,16 @@ end;
 select o.ID, o.NAME, o.CITY_ID,
        h.STARS, h.TYPE,
        bh.ID, sb.NAME,
-       sbd.PRICE, sbd.LINK
+       bh.PRICE min_price, bh.LINK
 from s_object o
 	     left join s_props_hotel h on o.ID = h.OBJECT_ID
 	     left join s_booking_hotels bh on o.ID = bh.HOTEL_ID
 	     left join s_booking sb on sb.ID = bh.BOOKING_SYSTEM_ID
-	     left join s_booking_data sbd on bh.BOOKING_CODE = sbd.BOOKING_CODE
 
-where o.TYPE = 'hotel' and o.CITY_ID = 8 and sbd.PRICE = GET_MIN_SUM(o.ID)
+where o.TYPE = 'hotel' and o.CITY_ID = 8 and bh.PRICE = GET_MIN_SUM(o.ID)
 
-group by o.ID, o.NAME, o.CITY_ID, h.STARS, h.TYPE, bh.ID, sb.NAME, sbd.PRICE, sbd.LINK
-order by sbd.PRICE;
+group by o.ID, o.NAME, o.CITY_ID, h.STARS, h.TYPE, bh.ID, sb.NAME, bh.PRICE, bh.LINK
+order by bh.PRICE;
 
 
 # Task 6. Составить запрос(ы) для создания объекта с полным набором информации владельцем объекта.
