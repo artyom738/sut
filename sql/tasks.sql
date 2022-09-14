@@ -352,6 +352,30 @@ update s_object o2 inner join (
 	where o.ID < 3) objects on objects.ID = o2.ID
 set o2.NAME = CONCAT(o2.NAME, ' (', objects.reg_name, ')');
 
+# Task 19. Средствами базы данных решить задачу автоматического обновления количества объектов
+# города для показа на странице города.
+
+DROP TRIGGER IF EXISTS on_add_object;
+CREATE TRIGGER on_add_object
+	AFTER INSERT ON s_object
+	FOR EACH ROW
+	UPDATE s_city SET OBJECTS_CNT = OBJECTS_CNT + 1 WHERE s_city.ID = NEW.CITY_ID;
+
+DROP TRIGGER IF EXISTS on_delete_object;
+CREATE TRIGGER on_delete_object
+	AFTER DELETE ON s_object
+	FOR EACH ROW
+	UPDATE s_city SET OBJECTS_CNT = OBJECTS_CNT - 1 WHERE s_city.ID = OLD.CITY_ID;
+
+DROP TRIGGER IF EXISTS on_update_object;
+CREATE TRIGGER on_update_object
+	AFTER UPDATE ON s_object
+	FOR EACH ROW
+	IF OLD.CITY_ID != NEW.CITY_ID THEN
+		UPDATE s_city SET OBJECTS_CNT = OBJECTS_CNT - 1 WHERE s_city.ID = OLD.CITY_ID;
+		UPDATE s_city SET OBJECTS_CNT = OBJECTS_CNT + 1 WHERE s_city.ID = NEW.CITY_ID;
+	END IF;
+
 # Task 20. Составить запрос для получения всех активных объектов указанных регионов
 # в городах являющимися региональными центрами.
 
