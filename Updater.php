@@ -317,6 +317,125 @@ create table s_object_clicks
 			$this->setDbVersion(11);
 		}
 
+		if ($version <= 11)
+		{
+			$commands = "
+alter table s_city
+	drop foreign key s_city_s_region_ID_fk;
+
+alter table s_city
+	add constraint s_city_s_region_ID_fk
+		foreign key (REGION_ID) references s_region (ID)
+			on delete set null;
+
+
+alter table s_contract
+	drop foreign key s_contract_s_object_ID_fk;
+
+alter table s_contract
+	add constraint s_contract_s_object_ID_fk
+		foreign key (OBJECT_ID) references s_object (ID)
+			on delete set null;
+
+alter table s_contract
+	drop foreign key s_contract_s_user_ID_fk;
+
+alter table s_contract
+	add constraint s_contract_s_user_ID_fk
+		foreign key (OWNER_ID) references s_user (ID)
+			on delete set null;
+
+
+
+alter table s_object
+	drop foreign key s_object_s_city_ID_fk;
+
+alter table s_object
+	add constraint s_object_s_city_ID_fk
+		foreign key (CITY_ID) references s_city (ID)
+			on delete set null;
+
+
+alter table s_object_clicks
+	drop foreign key s_object_clicks_s_booking_ID_fk;
+
+alter table s_object_clicks
+	add constraint s_object_clicks_s_booking_ID_fk
+		foreign key (BOOKING_SYSTEM_ID) references s_booking (ID)
+			on delete cascade;
+
+alter table s_object_clicks
+	drop foreign key s_object_clicks_s_object_ID_fk;
+
+alter table s_object_clicks
+	add constraint s_object_clicks_s_object_ID_fk
+		foreign key (OBJECT_ID) references s_object (ID)
+			on delete cascade;
+
+
+alter table s_object_owner
+	drop foreign key s_object_owner_s_object_ID_fk;
+
+alter table s_object_owner
+	add constraint s_object_owner_s_object_ID_fk
+		foreign key (OBJECT_ID) references s_object (ID)
+			on delete cascade;
+
+alter table s_object_owner
+	drop foreign key s_object_owner_s_user_ID_fk;
+
+alter table s_object_owner
+	add constraint s_object_owner_s_user_ID_fk
+		foreign key (USER_ID) references s_user (ID)
+			on delete set null;
+
+
+alter table s_object_phone
+	drop foreign key s_phone_s_object_ID_fk;
+
+alter table s_object_phone
+	add constraint s_phone_s_object_ID_fk
+		foreign key (OBJECT_ID) references s_object (ID)
+			on delete cascade;
+
+
+alter table s_object_service
+	drop foreign key s_object_service_s_object_ID_fk;
+
+alter table s_object_service
+	add constraint s_object_service_s_object_ID_fk
+		foreign key (OBJECT_ID) references s_object (ID)
+			on delete cascade;
+
+alter table s_object_service
+	drop foreign key s_object_service_s_service_ID_fk;
+
+alter table s_object_service
+	add constraint s_object_service_s_service_ID_fk
+		foreign key (SERVICE_ID) references s_service (ID)
+			on delete set null;
+
+
+alter table s_props_apart
+	add constraint s_props_apart_s_object_ID_fk
+		foreign key (OBJECT_ID) references s_object (ID)
+			on delete cascade;
+
+alter table s_props_hotel
+	add constraint s_props_hotel_s_object_ID_fk
+		foreign key (OBJECT_ID) references s_object (ID)
+			on delete cascade;
+
+alter table s_props_sight
+	add constraint s_props_sight_s_object_ID_fk
+		foreign key (OBJECT_ID) references s_object (ID)
+			on delete cascade;
+
+			";
+			$db->multi_query($commands);
+			$this->setDbVersion(12);
+		}
+
 
 		return $this->getDbVersion();
 	}
