@@ -6,7 +6,7 @@ select o.ID,
        sr.NAME   Region,
        ss.NAME   Service,
        su.NAME   Owner,
-       sph.STARS, sph.TYPE, sop.VALUE
+       sph.TYPE, sph.YEAR_FOUND, sop.VALUE
 from s_object o
 	     left join s_city sc on o.CITY_ID = sc.ID
 	     left join s_region sr on sr.ID = sc.REGION_ID
@@ -16,12 +16,12 @@ from s_object o
 
 	     left join s_object_phone sop on o.ID = sop.OBJECT_ID
 
-	     left join s_props_hotel sph on o.ID = sph.OBJECT_ID
+	     left join s_props_sight sph on o.ID = sph.OBJECT_ID
 
 	     left join s_object_owner soo on o.ID = soo.OBJECT_ID
 	     left join s_user su on su.ID = soo.USER_ID
 
-where sr.ID = 3 and o.TYPE = 'hotel';
+where sr.ID = 3 and o.TYPE = 'sight';
 
 # Task 3 - запрос для выборки данных по объектам определенного типа заданного города
 select o.ID, o.NAME, sc.NAME City, sph.STARS, sph.TYPE, ss.NAME Service, sop.VALUE
@@ -34,57 +34,72 @@ from s_object o
 # использовать left или inner - надо ли выводить те объекты, у которых не заполнены некоторые поля?
 	     left join s_object_phone sop on o.ID = sop.OBJECT_ID
 
-where CITY_ID = 1 and o.TYPE = 'hotel' and ss.NAME = 'Skiles Inc';
+where CITY_ID = 1 and o.TYPE = 'hotel';
 
 # Task 3a Дополнить фильтрацией по услуге(ам).
-select o.ID, o.NAME, sc.NAME City, sph.STARS, sph.TYPE, ss.NAME Service, sop.VALUE Phone
+select o.ID, o.NAME, sc.NAME City, sph.STARS, sph.TYPE, o2.NAME Service, sop.VALUE Phone
 from s_object o
 	     left join s_city sc on sc.ID = o.CITY_ID
 	     left join s_props_hotel sph on o.ID = sph.OBJECT_ID
-
-	     left join s_object_service sos on o.ID = sos.OBJECT_ID
-	     left join s_service ss on ss.ID = sos.SERVICE_ID
 	     left join s_object_phone sop on o.ID = sop.OBJECT_ID
-
-where CITY_ID = 8 and o.TYPE = 'hotel' and ss.NAME in ('Skiles Inc', 'Kovacek LLC');
+	     inner join (
+    select o2.ID, ss.NAME from s_object o2
+	    left join s_object_service sos on o2.ID = sos.OBJECT_ID
+	    left join s_service ss on ss.ID = sos.SERVICE_ID
+        where ss.NAME in ('Bogisich, Feil and Block', 'Keebler PLC', 'Gusikowski Ltd') and o2.TYPE = 'hotel'
+) o2 on o2.ID = o.ID
+and CITY_ID = 1;
 
 # Task 3b - Дополнить так, чтобы объекты имеющие активный договор имели приоритет над другими объектами.
 
-select o.ID, o.NAME, sc.NAME City, sph.STARS, sph.TYPE, MAX(c.DATE_START) D_start, MAX(c.DATE_END) D_end,
-       (c.DATE_END > NOW()) Active, ss.NAME Service, sop.VALUE Phone
+select o.ID, o.NAME, sc.NAME City, sph.STARS, sph.TYPE, ss.NAME Service, sop.VALUE Phone,
+       MAX(c.DATE_START) D_start, MAX(c.DATE_END) D_end, (c.DATE_END > NOW()) Active
 from s_object o
 	     left join s_city sc on sc.ID = o.CITY_ID
 	     left join s_props_hotel sph on o.ID = sph.OBJECT_ID
-
+	     left join s_object_phone sop on o.ID = sop.OBJECT_ID
 	     left join s_object_service sos on o.ID = sos.OBJECT_ID
 	     left join s_service ss on ss.ID = sos.SERVICE_ID
-	     left join s_object_phone sop on o.ID = sop.OBJECT_ID
-
 	     left join s_contract c on o.ID = c.OBJECT_ID
-
-where CITY_ID = 8 and o.TYPE = 'hotel'
+inner join (
+	select o2.ID
+	from s_object o2
+		     left join s_object_service sos on o2.ID = sos.OBJECT_ID
+		     left join s_service ss on ss.ID = sos.SERVICE_ID
+	where
+# 	    ss.NAME in ('Bogisich, Feil and Block', 'Keebler PLC', 'Gusikowski Ltd') and
+o2.TYPE = 'hotel'
+) o2 on o2.ID = o.ID
+  and CITY_ID = 1
 group by o.ID, o.NAME, sc.NAME, sph.STARS, sph.TYPE, Active, Service, Phone
 order by Active DESC, D_start DESC;
 
 
 # Task 3c - Дополнить постраничкой.
 
-select objects.*, ss.NAME Service, sop.VALUE Phone, sph.STARS, sph.TYPE
-from (select o.ID ID, o.NAME NAME, sc.NAME City, MAX(c.DATE_START) D_start, MAX(c.DATE_END) D_end,
-             (c.DATE_END > NOW()) Active
-      from s_object o
-	           left join s_city sc on sc.ID = o.CITY_ID
-	           left join s_contract c on o.ID = c.OBJECT_ID
+select o.ID, o.NAME, sc.NAME City, sph.STARS, sph.TYPE, ss.NAME Service, sop.VALUE Phone,
+       MAX(c.DATE_START) D_start, MAX(c.DATE_END) D_end, (c.DATE_END > NOW()) Active
+from s_object o
+	     left join s_city sc on sc.ID = o.CITY_ID
+	     left join s_props_hotel sph on o.ID = sph.OBJECT_ID
+	     left join s_object_phone sop on o.ID = sop.OBJECT_ID
+	     left join s_object_service sos on o.ID = sos.OBJECT_ID
+	     left join s_service ss on ss.ID = sos.SERVICE_ID
+	     left join s_contract c on o.ID = c.OBJECT_ID
+where o.ID IN (select t.ID from(
+	    select o2.ID
+	    from s_object o2
+		         left join s_object_service sos on o2.ID = sos.OBJECT_ID
+		         left join s_service ss on ss.ID = sos.SERVICE_ID
+	    where
+# 	    ss.NAME in ('Bogisich, Feil and Block', 'Keebler PLC', 'Gusikowski Ltd') and
+		o2.TYPE = 'hotel' and o2.CITY_ID = 1
+	    group by 1
+	    limit 2 offset 0
 
-      where CITY_ID = 8 and o.TYPE = 'hotel'
-      group by o.ID, o.NAME, sc.NAME, Active
-      order by Active DESC, D_start DESC
-      limit 2 offset 2
-     ) objects
-	     left join s_object_service sos on objects.ID = sos.OBJECT_ID
-	     left join s_service ss on ss.ID = objects.ID
-	     left join s_object_phone sop on objects.ID = sop.OBJECT_ID
-	     left join s_props_hotel sph on objects.ID = sph.OBJECT_ID;
+) t)
+group by o.ID, o.NAME, sc.NAME, sph.STARS, sph.TYPE, Active, Service, Phone
+order by Active DESC, D_start DESC;
 
 
 # Task 4 - Составить запрос для выборки объектов определенного типа по заданному региону.
@@ -115,8 +130,6 @@ from s_object o
 ) price on price.hotel_id = bh.HOTEL_ID AND price.min_price = BH.PRICE
 
 where o.TYPE = 'hotel' and o.CITY_ID = 8 and min_price is not null
-
-group by o.ID, o.NAME, o.CITY_ID, h.STARS, h.TYPE, bh.ID, sb.NAME, price.min_price, bh.LINK
 order by price.min_price;
 
 
@@ -188,24 +201,26 @@ select * from s_object where CITY_ID IS NULL;
 
 # Task 9. Составить запрос для поиска всех неактивных объектов города.
 
-select * from s_object where IS_ACTIVE != 'Y';
+select * from s_object where IS_ACTIVE != 'Y' and CITY_ID = 11;
 
 # Task 10. Составить запрос для поиска всех неактивных объектов города
 # с выводом количества таких объектов в разрезе по городам (город, количество неактивных объектов).
 
-select CITY_ID, COUNT(*)
+select CITY_ID, sc.NAME, COUNT(*) cnt
 from s_object
+left join s_city sc on sc.ID = s_object.CITY_ID
 where IS_ACTIVE != 'Y'
 group by CITY_ID;
 
 # Task 10a. Дополнить запрос таким образом, чтобы в выборке были только города,
 # в которых количество неактивных объектов больше 10.
 
-select CITY_ID, COUNT(*) cnt
+select CITY_ID, sc.NAME, COUNT(*) cnt
 from s_object
+	     left join s_city sc on sc.ID = s_object.CITY_ID
 where IS_ACTIVE != 'Y'
 group by CITY_ID
-having cnt > 10;
+having cnt > 5;
 
 # Task 11. Найти все объекты с заданным номером телефона.
 
@@ -219,21 +234,21 @@ where sop.VALUE = '370-498-0624';
 # о гостиницах (внешний код, цена, ссылка для перехода). Эти суточные данные сохраняются в отдельную таблицу.
 # Наша задача синхронизировать их с нашей базой (обновить существующие данные, добавить новые, удалить отсутствующие).
 
-update s_booking_data bd
-	inner join s_booking_data_temp sbdt on bd.BOOKING_CODE = sbdt.BOOKING_CODE
-set bd.PRICE = sbdt.PRICE, bd.LINK = sbdt.LINK;
+update s_booking_hotels bh
+	inner join s_booking_data_temp sbdt on bh.BOOKING_CODE = sbdt.BOOKING_CODE
+set bh.PRICE = sbdt.PRICE, bh.LINK = sbdt.LINK
+where bh.BOOKING_SYSTEM_ID = 1;
 
-insert into s_booking_data (BOOKING_CODE, PRICE, LINK)
-select bdt.BOOKING_CODE, bdt.PRICE, bdt.LINK from s_booking_data_temp bdt
-	left join s_booking_data bd on bdt.BOOKING_CODE = bd.BOOKING_CODE where bd.BOOKING_CODE is null;
+# заранее неизвестно, по каким конкретно гостиницам пришли данные, поэтому будет "уведомление" о том, что пришли новые
+# данные, надо заполнить данные о гостинице и связать их с booking_code. Поэтому INSERT-a нет
+select bdt.BOOKING_CODE, bdt.PRICE, bdt.LINK
+from s_booking_data_temp bdt
+left join s_booking_hotels sbh on bdt.BOOKING_CODE = sbh.BOOKING_CODE
+	where sbh.BOOKING_CODE is null;
 
-delete from s_booking_data bd where BOOKING_CODE in
-    (select * from
-	    (select bd.BOOKING_CODE
-	     from s_booking_data bd
-	              left join s_booking_data_temp bdt on bdt.BOOKING_CODE = bd.BOOKING_CODE
-	     where bdt.BOOKING_CODE is null) bd_to_delete
-    );
+delete bh from s_booking_hotels bh
+left join s_booking_data_temp bdt on bdt.BOOKING_CODE = bh.BOOKING_CODE
+where bdt.BOOKING_CODE is null and bh.ID = 1;
 
 
 # Task 13. Найти все объекты городов с населением меньше 10 тыс. человек в указанных регионах.
@@ -316,7 +331,7 @@ where clicks > 500;
 
 # Task 17b. Дополнить запрос фильтром по объекту.
 
-select b.ID BS_ID, b.NAME BS_NAME, book_click.clicks CLICKS
+select b.ID BS_ID, b.NAME BS_NAME, book_click.clicks
 from s_booking b
 	     left join (
 	select BOOKING_SYSTEM_ID, SUM(CLICKS) clicks from s_object_clicks oc
@@ -353,7 +368,7 @@ SELECT O.ID, O.NAME, SUM(DATEDIFF(SC.DATE_END, SC.DATE_START)) DAYS
 FROM s_object O
 	     LEFT JOIN s_contract sc on O.ID = sc.OBJECT_ID
 GROUP BY 1,2
-HAVING DAYS > 1500;
+HAVING DAYS > 6000;
 
 # Task 22. Необходимо отправить рассылку и пропушить владельцев объектов, договор по которым недавно истёк,
 # но новый договор так и не был заключен. Для этого нужно составить запрос для выборки всех объектов,
@@ -363,7 +378,7 @@ HAVING DAYS > 1500;
 SELECT O.ID, O.NAME, DATEDIFF(NOW(), SC.DATE_END) DIFF
 FROM s_object O
 	     LEFT JOIN s_contract sc on O.ID = sc.OBJECT_ID
-WHERE DATEDIFF(NOW(), SC.DATE_END) < 30 AND DATEDIFF(NOW(), SC.DATE_END) > 7
+WHERE DATEDIFF(NOW(), SC.DATE_END) < 50 AND DATEDIFF(NOW(), SC.DATE_END) > 7
   AND O.ID NOT IN (
 # ИМЕЮТ АКТИВНЫЙ ДОГОВОР
 	SELECT O.ID
