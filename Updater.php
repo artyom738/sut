@@ -11,9 +11,29 @@ class Updater
 		$this->dbconn = $database->dbconn;
 	}
 
+	private function createOptionsTable()
+	{
+		$db = $this->dbconn;
+		$db->query("
+		CREATE TABLE IF NOT EXISTS `s_options` (
+ `ID` int NOT NULL AUTO_INCREMENT,
+ `NAME` varchar(255) DEFAULT NULL,
+ `VALUE` varchar(255) DEFAULT NULL,
+ PRIMARY KEY (`ID`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+insert into s_options (NAME, VALUE) values ('database_version', 0);
+			");
+	}
+
 	public function getDbVersion(): int
 	{
 		$result = $this->dbconn->query("select value from s_options where NAME = 'database_version'");
+		if (empty($result->fetch_assoc()))
+		{
+			$this->createOptionsTable();
+			return 0;
+		}
 		return $result->fetch_assoc()['value'];
 	}
 
@@ -52,7 +72,7 @@ create table s_test
 		if ($version <= 4)
 		{
 			$db->query("
-			drop table s_test;
+			drop table if exists s_test;
 			");
 			$this->setDbVersion(5);
 		}
@@ -294,7 +314,6 @@ create table s_object_clicks
 
 		if ($version <= 10)
 		{
-			$commands = file_get_contents("sql/data.sql");
 			$this->setDbVersion(11);
 		}
 
