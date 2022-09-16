@@ -202,6 +202,7 @@ select * from s_object where CITY_ID IS NULL;
 # Task 9. Составить запрос для поиска всех неактивных объектов города.
 
 select * from s_object where IS_ACTIVE != 'Y' and CITY_ID = 11;
+show create table s_object;
 
 # Task 10. Составить запрос для поиска всех неактивных объектов города
 # с выводом количества таких объектов в разрезе по городам (город, количество неактивных объектов).
@@ -303,7 +304,7 @@ UPDATE s_object inner join (
 	from s_object o
 		     left join s_city sc on sc.ID = o.CITY_ID
 		     left join s_contract s on o.ID = s.OBJECT_ID
-	where sc.POPULATION is null and NOT (NOW() > s.DATE_START AND NOW() < s.DATE_END)
+	where sc.POPULATION is null and NOT (NOW() > s.DATE_START AND NOW() < s.DATE_END) and o.IS_ACTIVE = 'Y'
 ) obj_disable ON obj_disable.ID = s_object.ID
 set s_object.IS_ACTIVE = 'N';
 
@@ -317,6 +318,11 @@ from s_booking b
 		where oc.DATE > '2000-01-01' and oc.DATE < '2010-01-01'
 	group by BOOKING_SYSTEM_ID) book_click on book_click.BOOKING_SYSTEM_ID = b.ID;
 
+# NEW VERSION
+SELECT OC.BOOKING_SYSTEM_ID, SUM(oc.CLICKS) CLICKS FROM s_object_clicks OC
+WHERE OC.DATE > '2000-01-01' and oc.DATE < '2010-01-01'
+group by 1;
+
 # Task 17а. Дополнить запрос так, чтобы в результатах были только данные по тем системам бронирования
 # по которым количество переходов за указанный период больше 100.
 
@@ -329,6 +335,12 @@ from s_booking b
 ) book_click on book_click.BOOKING_SYSTEM_ID = b.ID
 where clicks > 500;
 
+# NEW VERSION
+SELECT OC.BOOKING_SYSTEM_ID, SUM(oc.CLICKS) CLICKS_CNT FROM s_object_clicks OC
+WHERE OC.DATE > '2000-01-01' and oc.DATE < '2010-01-01'
+group by 1
+having CLICKS_CNT > 500;
+
 # Task 17b. Дополнить запрос фильтром по объекту.
 
 select b.ID BS_ID, b.NAME BS_NAME, book_click.clicks
@@ -339,6 +351,12 @@ from s_booking b
 	group by BOOKING_SYSTEM_ID
 ) book_click on book_click.BOOKING_SYSTEM_ID = b.ID
 where clicks > 20;
+
+# NEW VERSION
+SELECT OC.BOOKING_SYSTEM_ID, SUM(oc.CLICKS) CLICKS_CNT FROM s_object_clicks OC
+WHERE OC.DATE > '2000-01-01' and oc.DATE < '2010-01-01' AND OC.OBJECT_ID = 30
+group by 1
+having CLICKS_CNT > 20;
 
 
 # Task 18. Составить запрос для обновления названия всем объектам таким образом,
