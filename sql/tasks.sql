@@ -26,7 +26,7 @@ where sr.ID = 3 and o.TYPE = 'sight';
 # Task 3 - запрос для выборки данных по объектам определенного типа заданного города
 select o.ID, o.NAME, sc.NAME City, sph.STARS, sph.TYPE, ss.NAME Service, sop.VALUE
 from s_object o
-	     left join s_city sc on sc.ID = o.CITY_ID
+	     inner join s_city sc on sc.ID = o.CITY_ID
 	     left join s_props_hotel sph on o.ID = sph.OBJECT_ID
 
 	     left join s_object_service sos on o.ID = sos.OBJECT_ID
@@ -37,7 +37,7 @@ from s_object o
 where CITY_ID = 1 and o.TYPE = 'hotel';
 
 # Task 3a Дополнить фильтрацией по услуге(ам).
-select o.ID, o.NAME, sc.NAME City, sph.STARS, sph.TYPE, o2.NAME Service, sop.VALUE Phone
+explain select o.ID, o.NAME, sc.NAME City, sph.STARS, sph.TYPE, o2.NAME Service, sop.VALUE Phone
 from s_object o
 	     left join s_city sc on sc.ID = o.CITY_ID
 	     left join s_props_hotel sph on o.ID = sph.OBJECT_ID
