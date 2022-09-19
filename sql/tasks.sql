@@ -1,59 +1,83 @@
-# Task 2. Составить запрос(ы) для выборки полного набора данных всех объектов определенного типа для заданного региона.
+# Task 2. Составить запрос(ы) для выборки полного набора данных всех объектов определенного типа
+# для заданного региона.
 select o.ID,
        o.NAME,
        o.TYPE,
        sc.NAME   City,
        sr.NAME   Region,
-       ss.NAME   Service,
        su.NAME   Owner,
-       sph.TYPE, sph.YEAR_FOUND, sop.VALUE
+       sph.TYPE, sph.YEAR_FOUND
 from s_object o
-	     left join s_city sc on o.CITY_ID = sc.ID
-	     left join s_region sr on sr.ID = sc.REGION_ID
+	    join s_city sc on o.CITY_ID = sc.ID
+	    join s_region sr on sr.ID = sc.REGION_ID
 
-	     left join s_object_service sos on o.ID = sos.OBJECT_ID
-	     left join s_service ss on ss.ID = sos.SERVICE_ID
-
-	     left join s_object_phone sop on o.ID = sop.OBJECT_ID
-
-	     left join s_props_sight sph on o.ID = sph.OBJECT_ID
-
-	     left join s_object_owner soo on o.ID = soo.OBJECT_ID
-	     left join s_user su on su.ID = soo.USER_ID
+	    left join s_props_sight sph on o.ID = sph.OBJECT_ID
+	    left join s_object_owner soo on o.ID = soo.OBJECT_ID
+	    left join s_user su on su.ID = soo.USER_ID
 
 where sr.ID = 3 and o.TYPE = 'sight';
 
+
+select o.ID, ss.NAME service_name
+from s_object o
+	     join s_city sc on o.CITY_ID = sc.ID
+	     left join s_object_service sos on o.ID = sos.OBJECT_ID
+	     left join s_service ss on ss.ID = sos.SERVICE_ID
+where sc.REGION_ID = 3 and o.TYPE = 'sight';
+
+select o.ID, sop.VALUE phone
+from s_object o
+	     join s_city sc on o.CITY_ID = sc.ID
+	     left join s_object_phone sop on o.ID = sop.OBJECT_ID
+where sc.REGION_ID = 3 and o.TYPE = 'sight';
+
 # Task 3 - запрос для выборки данных по объектам определенного типа заданного города
-select o.ID, o.NAME, sc.NAME City, sph.STARS, sph.TYPE, ss.NAME Service, sop.VALUE
+select o.ID, o.NAME, sc.NAME City, sph.STARS, sph.TYPE
 from s_object o
 	     inner join s_city sc on sc.ID = o.CITY_ID
 	     left join s_props_hotel sph on o.ID = sph.OBJECT_ID
-
-	     left join s_object_service sos on o.ID = sos.OBJECT_ID
-	     left join s_service ss on ss.ID = sos.SERVICE_ID
-# использовать left или inner - надо ли выводить те объекты, у которых не заполнены некоторые поля?
-	     left join s_object_phone sop on o.ID = sop.OBJECT_ID
-
 where CITY_ID = 1 and o.TYPE = 'hotel';
 
+select o.ID, ss.NAME service_name
+from s_object o
+    left join s_object_service sos on o.ID = sos.OBJECT_ID
+    left join s_service ss on ss.ID = sos.SERVICE_ID
+where o.CITY_ID = 1 and o.TYPE = 'hotel';
+
+select o.ID, sop.VALUE phone
+from s_object o
+    left join s_object_phone sop on o.ID = sop.OBJECT_ID
+where o.CITY_ID = 1 and o.TYPE = 'hotel';
+
 # Task 3a Дополнить фильтрацией по услуге(ам).
-explain select o.ID, o.NAME, sc.NAME City, sph.STARS, sph.TYPE, o2.NAME Service, sop.VALUE Phone
+explain select o.ID, o.NAME, sc.NAME City, sph.STARS, sph.TYPE, o2.serv_id, o2.NAME Service, sop.VALUE Phone
 from s_object o
 	     left join s_city sc on sc.ID = o.CITY_ID
 	     left join s_props_hotel sph on o.ID = sph.OBJECT_ID
 	     left join s_object_phone sop on o.ID = sop.OBJECT_ID
 	     inner join (
-    select o2.ID, ss.NAME from s_object o2
+    select o2.ID, ss.NAME, ss.ID serv_id from s_object o2
 	    left join s_object_service sos on o2.ID = sos.OBJECT_ID
 	    left join s_service ss on ss.ID = sos.SERVICE_ID
         where ss.NAME in ('Bogisich, Feil and Block', 'Keebler PLC', 'Gusikowski Ltd') and o2.TYPE = 'hotel'
 ) o2 on o2.ID = o.ID
 and CITY_ID = 1;
 
+
+select o.ID, o.NAME, sc.NAME City, sph.STARS, sph.TYPE, ss.NAME Service, sop.VALUE Phone
+from s_object o
+	     left join s_city sc on sc.ID = o.CITY_ID
+	     left join s_props_hotel sph on o.ID = sph.OBJECT_ID
+	     left join s_object_phone sop on o.ID = sop.OBJECT_ID
+	     join s_object_service sos on o.ID = sos.OBJECT_ID
+	     join s_service ss on ss.ID = sos.SERVICE_ID
+	where o.TYPE = 'hotel' and CITY_ID = 1 and ss.ID in (11,44,80);
+
+
 # Task 3b - Дополнить так, чтобы объекты имеющие активный договор имели приоритет над другими объектами.
 
 select o.ID, o.NAME, sc.NAME City, sph.STARS, sph.TYPE, ss.NAME Service, sop.VALUE Phone,
-       MAX(c.DATE_START) D_start, MAX(c.DATE_END) D_end, (c.DATE_END > NOW()) Active
+       (c.DATE_END > NOW()) Active
 from s_object o
 	     left join s_city sc on sc.ID = o.CITY_ID
 	     left join s_props_hotel sph on o.ID = sph.OBJECT_ID
@@ -61,18 +85,11 @@ from s_object o
 	     left join s_object_service sos on o.ID = sos.OBJECT_ID
 	     left join s_service ss on ss.ID = sos.SERVICE_ID
 	     left join s_contract c on o.ID = c.OBJECT_ID
-inner join (
-	select o2.ID
-	from s_object o2
-		     left join s_object_service sos on o2.ID = sos.OBJECT_ID
-		     left join s_service ss on ss.ID = sos.SERVICE_ID
-	where
-# 	    ss.NAME in ('Bogisich, Feil and Block', 'Keebler PLC', 'Gusikowski Ltd') and
-o2.TYPE = 'hotel'
-) o2 on o2.ID = o.ID
-  and CITY_ID = 1
+		where
+# 	    ss.ID in (11,44,80) and
+		o.TYPE = 'hotel' and CITY_ID = 1
 group by o.ID, o.NAME, sc.NAME, sph.STARS, sph.TYPE, Active, Service, Phone
-order by Active DESC, D_start DESC;
+order by Active DESC, MAX(c.DATE_START) DESC;
 
 
 # Task 3c - Дополнить постраничкой.
@@ -92,7 +109,7 @@ where o.ID IN (select t.ID from(
 		         left join s_object_service sos on o2.ID = sos.OBJECT_ID
 		         left join s_service ss on ss.ID = sos.SERVICE_ID
 	    where
-# 	    ss.NAME in ('Bogisich, Feil and Block', 'Keebler PLC', 'Gusikowski Ltd') and
+# 	    ss.ID in (11,44,80) and
 		o2.TYPE = 'hotel' and o2.CITY_ID = 1
 	    group by 1
 	    limit 2 offset 0
@@ -102,12 +119,31 @@ group by o.ID, o.NAME, sc.NAME, sph.STARS, sph.TYPE, Active, Service, Phone
 order by Active DESC, D_start DESC;
 
 
+select o.ID, o.NAME, o.TYPE, o.CITY_ID, sph.STARS, sph.TYPE, ss.NAME Service, sop.VALUE Phone,
+       MAX(c.DATE_START) D_start, MAX(c.DATE_END) D_end, (c.DATE_END > NOW()) Active
+from (select o2.ID, o2.NAME, o2.TYPE, o2.CITY_ID
+      from s_object o2
+	      left join s_object_service sos on o2.ID = sos.OBJECT_ID
+      where
+#       sos.SERVICE_ID in (11,44,80) and
+      o2.TYPE = 'hotel' and o2.CITY_ID = 1
+      group by 1
+      limit 2 offset 0) o
+	     left join s_props_hotel sph on o.ID = sph.OBJECT_ID
+	     left join s_object_phone sop on o.ID = sop.OBJECT_ID
+	     left join s_object_service sos on o.ID = sos.OBJECT_ID
+	     left join s_service ss on ss.ID = sos.SERVICE_ID
+	     left join s_contract c on o.ID = c.OBJECT_ID
+group by o.ID, o.NAME, o.TYPE, o.CITY_ID, sph.STARS, sph.TYPE, ss.NAME, sop.VALUE, Active
+;
+
+
 # Task 4 - Составить запрос для выборки объектов определенного типа по заданному региону.
 
 select o.ID, o.NAME, o.TYPE, sc.NAME City, sr.NAME Region
 from s_object o
-	     left join s_city sc on o.CITY_ID = sc.ID
-	     left join s_region sr on sr.ID = sc.REGION_ID
+	  join s_city sc on o.CITY_ID = sc.ID
+	  join s_region sr on sr.ID = sc.REGION_ID
 where sr.ID = 1 and o.TYPE = 'hotel';
 
 
@@ -133,6 +169,23 @@ where o.TYPE = 'hotel' and o.CITY_ID = 8 and min_price is not null
 order by price.min_price;
 
 
+select o.ID, o.NAME, o.CITY_ID,
+       h.STARS, h.TYPE,
+       bh.ID, sb.NAME,
+       MIN(bh.PRICE), bh.LINK
+from s_object o
+	     left join s_props_hotel h on o.ID = h.OBJECT_ID
+	     inner join s_booking_hotels bh on o.ID = bh.HOTEL_ID
+	     inner join s_booking sb on sb.ID = bh.BOOKING_SYSTEM_ID
+
+where o.TYPE = 'hotel' and o.CITY_ID = 8
+  and exists(select bh.HOTEL_ID hotel_id, MIN(bh.PRICE) min_price from s_booking_hotels bh
+             group by 1, bh.PRICE
+             having bh.PRICE = MIN(bh.PRICE)
+     )
+group by o.ID, o.NAME, o.CITY_ID, h.STARS, h.TYPE, bh.ID, sb.NAME, bh.LINK
+;
+
 # Task 5b. Какие есть несколько различных подходов для решения данной задачи?
 # Можно ли тут использовать хранимую процедуру? Если да, то реализуй это решение.
 # Опиши в чем плюсы и минусы использования хранимых процедур.
@@ -148,7 +201,7 @@ BEGIN
 	RETURN SUM;
 end;
 
-select o.ID, o.NAME, o.CITY_ID,
+select distinct o.ID, o.NAME, o.CITY_ID,
        h.STARS, h.TYPE,
        bh.ID, sb.NAME,
        bh.PRICE min_price, bh.LINK
@@ -399,7 +452,7 @@ CREATE TRIGGER on_update_object
 
 SELECT O.ID, O.NAME, SC.ID, SC.NAME, SC.IS_REGION_CENTER
 FROM s_object O
-	     LEFT JOIN s_city sc on sc.ID = O.CITY_ID
+	     INNER JOIN s_city sc on sc.ID = O.CITY_ID
 WHERE O.IS_ACTIVE = 'Y'
   AND SC.IS_REGION_CENTER = 'Y';
 
@@ -456,3 +509,10 @@ WHERE EXISTS (SELECT O.ID
 	                   LEFT JOIN s_city sc on sc.ID = O.CITY_ID
               WHERE SC.REGION_ID = 2
 	            AND O.ID = 2);
+
+DELETE
+FROM s_object_phone sop
+WHERE EXISTS (SELECT O.ID
+              FROM s_object O
+	                   LEFT JOIN s_city sc on sc.ID = O.CITY_ID
+              WHERE SC.REGION_ID = 2 AND O.ID = sop.OBJECT_ID AND O.ID = 2);

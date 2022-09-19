@@ -319,6 +319,7 @@ create table s_object_clicks
 
 		if ($version <= 11)
 		{
+			// foreign keys
 			$commands = "
 alter table s_city
 	drop foreign key s_city_s_region_ID_fk;
@@ -434,6 +435,44 @@ alter table s_props_sight
 			";
 			$db->multi_query($commands);
 			$this->setDbVersion(12);
+		}
+
+		if ($version <= 12)
+		{
+			// indexes
+			$commands = "
+create index s_object_service_OBJECT_ID_SERVICE_ID_index
+	on s_object_service (OBJECT_ID, SERVICE_ID);
+
+create index s_object_clicks_BOOKING_SYSTEM_ID_CLICKS_index
+	on s_object_clicks (BOOKING_SYSTEM_ID, CLICKS);
+
+create index s_object_phone_OBJECT_ID_index
+	on s_object_phone (OBJECT_ID);
+
+create index s_props_hotel_OBJECT_ID_index
+	on s_props_hotel (OBJECT_ID);
+
+create index s_contract_OBJECT_ID_DATE_END_DATE_START_index
+	on s_contract (OBJECT_ID, DATE_END, DATE_START);
+
+create index s_booking_hotels_HOTEL_ID_PRICE_index
+	on s_booking_hotels (HOTEL_ID, PRICE);
+
+create index s_object_owner_OBJECT_ID_USER_ID_index
+	on s_object_owner (OBJECT_ID, USER_ID);
+
+
+
+alter table s_booking_data_temp
+	add constraint s_booking_data_temp_pk
+		primary key (ID);
+
+alter table s_booking_data_temp
+	modify ID int auto_increment;
+			";
+			$db->multi_query($commands);
+			$this->setDbVersion(13);
 		}
 
 
